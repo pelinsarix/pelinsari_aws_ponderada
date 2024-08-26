@@ -1,0 +1,231 @@
+<?php 
+include "../inc/dbinfo.inc"; 
+?>
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogadores de Futebol</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #f2f2f2;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+        h1 {
+            color: #69A2B0;
+        }
+        table {
+            width: 50dvw;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            background-color: #fff;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #69A2B0;
+            color: white;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        form {
+	    width: 80dvw
+            margin-bottom: 20px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        input[type="text"], input[type="number"], input[type="submit"] {
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        input[type="submit"] {
+            background-color: #69A2B0;
+            color: white;
+            cursor: pointer;
+        }
+        input[type="submit"]:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Jogadores de Futebol</h1>
+
+<?php
+
+$connection = mysqli_connect(DB_SERVER, DB_USERNAME, DB_PASSWORD);
+
+if (mysqli_connect_errno()) {
+    echo "Falha ao conectar ao MySQL: " . mysqli_connect_error();
+}
+
+$database = mysqli_select_db($connection, DB_DATABASE);
+
+VerifyFootballPlayersTable($connection, DB_DATABASE);
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    if (isset($_POST['add'])) {
+        AddPlayer($connection, $_POST['NOME'], $_POST['TIME'], $_POST['POSICAO'], $_POST['IDADE'], $_POST['ALTURA']);
+    } elseif (isset($_POST['delete'])) {
+        DeletePlayer($connection, $_POST['ID']);
+    } elseif (isset($_POST['update'])) {
+        UpdatePlayer($connection, $_POST['ID'], $_POST['NOME'], $_POST['TIME'], $_POST['POSICAO'], $_POST['IDADE'], $_POST['ALTURA']);
+    }
+}
+?>
+
+<form action="<?PHP echo $_SERVER['SCRIPT_NAME'] ?>" method="POST">
+    <table border="0">
+        <tr>
+            <td>Nome</td>
+            <td>Time</td>
+            <td>Posição</td>
+            <td>Idade</td>
+            <td>Altura (m)</td>
+        </tr>
+        <tr>
+            <td><input type="text" name="NOME" maxlength="100" size="30" required /></td>
+            <td><input type="text" name="TIME" maxlength="100" size="30" required /></td>
+            <td><input type="text" name="POSICAO" maxlength="50" size="30" required /></td>
+            <td><input type="number" name="IDADE" maxlength="3" size="5" required /></td>
+            <td><input type="text" name="ALTURA" maxlength="5" size="5" required /></td>
+            <td><input type="submit" name="add" value="Adicionar Jogador" /></td>
+        </tr>
+    </table>
+</form>
+
+
+<table>
+    <tr>
+        <th>ID</th>
+        <th>Nome</th>
+        <th>Time</th>
+        <th>Posição</th>
+        <th>Idade</th>
+        <th>Altura</th>
+        <th>Atualizar</th>
+        <th>Excluir</th>
+    </tr>
+
+<?php
+
+$result = mysqli_query($connection, "SELECT * FROM FOOTBALL_PLAYERS");
+
+while($query_data = mysqli_fetch_row($result)) {
+    echo "<tr>";
+    echo "<form action='".$_SERVER['SCRIPT_NAME']."' method='POST'>";
+    echo "<td><input type='hidden' name='ID' value='".$query_data[0]."'>".$query_data[0]."</td>";
+    echo "<td><input type='text' name='NOME' value='".$query_data[1]."'></td>";
+    echo "<td><input type='text' name='TIME' value='".$query_data[2]."'></td>";
+    echo "<td><input type='text' name='POSICAO' value='".$query_data[3]."'></td>";
+    echo "<td><input type='number' name='IDADE' value='".$query_data[4]."'></td>";
+    echo "<td><input type='text' name='ALTURA' value='".$query_data[5]."'></td>";
+    echo "<td><input type='submit' name='update' value='Atualizar'></td>";
+    echo "<td><input type='submit' name='delete' value='Excluir'></td>";
+    echo "</form>";
+    echo "</tr>";
+}
+
+?>
+
+</table>
+
+<?php
+mysqli_free_result($result);
+mysqli_close($connection);
+?>
+
+</body>
+</html>
+
+<?php
+
+function AddPlayer($connection, $nome, $time, $posicao, $idade, $altura) {
+    $n = mysqli_real_escape_string($connection, $nome);
+    $t = mysqli_real_escape_string($connection, $time);
+    $p = mysqli_real_escape_string($connection, $posicao);
+    $i = mysqli_real_escape_string($connection, $idade);
+    $a = mysqli_real_escape_string($connection, $altura);
+
+    $query = "INSERT INTO FOOTBALL_PLAYERS (NAME, TEAM, POSITION, AGE, HEIGHT) VALUES ('$n', '$t', '$p', '$i', '$a');";
+
+    if (!mysqli_query($connection, $query)) {
+        echo "<p>Erro ao adicionar dados do jogador.</p>";
+    }
+}
+
+
+function UpdatePlayer($connection, $id, $nome, $time, $posicao, $idade, $altura) {
+    $n = mysqli_real_escape_string($connection, $nome);
+    $t = mysqli_real_escape_string($connection, $time);
+    $p = mysqli_real_escape_string($connection, $posicao);
+    $i = mysqli_real_escape_string($connection, $idade);
+    $a = mysqli_real_escape_string($connection, $altura);
+
+    $query = "UPDATE FOOTBALL_PLAYERS SET NAME='$n', TEAM='$t', POSITION='$p', AGE='$i', HEIGHT='$a' WHERE ID='$id';";
+
+    if (!mysqli_query($connection, $query)) {
+        echo "<p>Erro ao atualizar dados do jogador.</p>";
+    }
+}
+
+function DeletePlayer($connection, $id) {
+    $id = mysqli_real_escape_string($connection, $id);
+    $query = "DELETE FROM FOOTBALL_PLAYERS WHERE ID='$id';";
+
+    if (!mysqli_query($connection, $query)) {
+        echo "<p>Erro ao excluir dados do jogador.</p>";
+    }
+}
+
+function VerifyFootballPlayersTable($connection, $dbName) {
+    if (!TableExists("FOOTBALL_PLAYERS", $connection, $dbName)) {
+        $query = "CREATE TABLE FOOTBALL_PLAYERS (
+            ID int(11) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            NAME VARCHAR(100),
+            TEAM VARCHAR(100),
+            POSITION VARCHAR(50),
+            AGE INT(3),
+            HEIGHT FLOAT
+        )";
+
+        if (!mysqli_query($connection, $query)) {
+            echo "<p>Erro ao criar a tabela.</p>";
+        }
+    }
+}
+
+
+function TableExists($tableName, $connection, $dbName) {
+    $t = mysqli_real_escape_string($connection, $tableName);
+    $d = mysqli_real_escape_string($connection, $dbName);
+
+    $checktable = mysqli_query($connection, "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_NAME = '$t' AND TABLE_SCHEMA = '$d'");
+
+    if (mysqli_num_rows($checktable) > 0) {
+        return true;
+    }
+
+    return false;
+}
